@@ -109,15 +109,26 @@ def train(net, loader, optimizer, criterion, lr_scheduler, epoch, writer, iterat
     writer.add_scalar('iter_%d/train/lr' % iteration, lr_scheduler.get_lr(optimizer), epoch)
 
     prog_bar = tqdm(enumerate(loader), total=len(loader), desc=desc, leave=True)
-    for batch_idx, (inputs, targets) in prog_bar:
-        print(inputs)
-        inputs, targets = inputs.cpu(), targets.cpu()
+
+    accuracies_list = []
+    indicies_list = []
+    for batch_idx, (inputs, targets, indicies) in prog_bar:
+
+
+        inputs, targets = inputs.cuda(), targets.cuda()
         optimizer.zero_grad()
         outputs = net(inputs)
+
+
+        accuracies = predicted == targets
+        indicies_list.append(indicies.to_list())
+
+
         loss = criterion(outputs, targets)
         # import pdb; pdb.set_trace()
         loss.backward()
         optimizer.step()
+
 
         train_loss += loss.item()
         _, predicted = outputs.max(1)
@@ -143,7 +154,7 @@ def test(net, loader, criterion, epoch, writer, iteration):
     prog_bar = tqdm(enumerate(loader), total=len(loader), desc=desc, leave=True)
     with torch.no_grad():
         for batch_idx, (inputs, targets) in prog_bar:
-            inputs, targets = inputs.cpu(), targets.cpu()
+            inputs, targets = inputs.cuda(), targets.cuda()
             outputs = net(inputs)
             loss = criterion(outputs, targets)
 
@@ -225,7 +236,7 @@ def main(config):
     model = get_network(config.network, config.depth, config.dataset, use_bn=config.get('use_bn', True))
     mask = None
     mb = ModelBase(config.network, config.depth, config.dataset, model)
-    mb.cpu()
+    mb.cuda()
     if mask is not None:
         mb.register_mask(mask)
         print_mask_information(mb, logger)
