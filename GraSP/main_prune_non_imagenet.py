@@ -6,6 +6,7 @@ import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import numpy as np
 
 from models.model_base import ModelBase
 from tensorboardX import SummaryWriter
@@ -95,7 +96,7 @@ def save_state(net, acc, epoch, loss, config, ckpt_path, is_best=False):
                                                             config.depth))
 
 
-def train(net, loader, optimizer, criterion, lr_scheduler, epoch, writer, iteration):
+def train(net, loader, optimizer, criterion, lr_scheduler, epoch, writer, iteration, indicies_list, accuracies_list):
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
@@ -110,19 +111,13 @@ def train(net, loader, optimizer, criterion, lr_scheduler, epoch, writer, iterat
 
     prog_bar = tqdm(enumerate(loader), total=len(loader), desc=desc, leave=True)
 
-    accuracies_list = []
-    indicies_list = []
+    epoch_accuracies_list = []
+    epoch_indicies_list = []
     for batch_idx, (inputs, targets, indicies) in prog_bar:
-
 
         inputs, targets = inputs.cuda(), targets.cuda()
         optimizer.zero_grad()
         outputs = net(inputs)
-
-
-        accuracies = predicted == targets
-        indicies_list.append(indicies.to_list())
-
 
         loss = criterion(outputs, targets)
         # import pdb; pdb.set_trace()
@@ -132,6 +127,12 @@ def train(net, loader, optimizer, criterion, lr_scheduler, epoch, writer, iterat
 
         train_loss += loss.item()
         _, predicted = outputs.max(1)
+
+
+        accuracies = predicted == targets
+        epoch_indicies_list.extend(indicies.tolist())
+        epoch_accuracies_list.extend(accuracies.tolist())
+
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
@@ -141,6 +142,11 @@ def train(net, loader, optimizer, criterion, lr_scheduler, epoch, writer, iterat
 
     writer.add_scalar('iter_%d/train/loss' % iteration, train_loss / (batch_idx + 1), epoch)
     writer.add_scalar('iter_%d/train/acc' % iteration, 100. * correct / total, epoch)
+
+    indicies_list = np.vstack((indicies_list, epoch_indicies_list))
+    accuracies_list = np.vstack((accuracies_list, epoch_accuracies_list))
+
+    return(indicies_list, accuracies_list)
 
 
 def test(net, loader, criterion, epoch, writer, iteration):
@@ -185,9 +191,15 @@ def train_once(mb, net, trainloader, testloader, writer, config, ckpt_path, lear
     lr_scheduler = PresetLRScheduler(lr_schedule)
     best_acc = 0
     best_epoch = 0
-    example_stats = {}
+    indicies_list=np.zeros(50000)
+    accuracies_list=np.zeros(50000)
+
     for epoch in range(num_epochs):
-        train(net, trainloader, optimizer, criterion, lr_scheduler, epoch, writer, iteration=iteration)
+        indicies_list, accuracies_list = train(net, trainloader, optimizer, criterion, lr_scheduler, epoch, writer, iteration=iteration, indicies_list=indicies_list, accuracies_list=accuracies_list)
+        print(indicies_list.shape, accuracies_list.shape)
+        np.save("../../gdrive/MyDrive/grasp_results/test_indicies.npy", indicies_list)
+        np.save("../../gdrive/MyDrive/grasp_results/test_accuracies.npy", accuracies_list)
+
         test_acc = test(net, testloader, criterion, epoch, writer, iteration)
         if test_acc > best_acc:
             print('Saving..')
@@ -281,7 +293,7 @@ def main(config):
         mb.model.apply(weights_init)
         print("=> Applying weight initialization(%s)." % config.get('init_method', 'kaiming'))
         print("Iteration of: %d/%d" % (iteration, num_iterations))
-        masks = GraSP(mb.model, ratio, trainloader, 'cpu',
+        masks = GraSP(mb.model, ratio, trainloader, 'cuda',
                       num_classes=classes[config.dataset],
                       samples_per_class=config.samples_per_class,
                       num_iters=config.get('num_iters', 1))
