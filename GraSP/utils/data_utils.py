@@ -1,6 +1,8 @@
 import torch
 import torchvision
 import torchvision.transforms as transforms
+import numpy as np
+import pickle
 
 
 def get_transforms(dataset):
@@ -72,7 +74,7 @@ def get_transforms(dataset):
     return transform_train, transform_test
 
 
-def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, root='../data'):
+def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, root='../data', percent_to_keep=1):
     transform_train, transform_test = get_transforms(dataset)
     trainset, testset = None, None
     if dataset == 'mnist':
@@ -99,19 +101,37 @@ def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, ro
     assert trainset is not None and testset is not None, 'Error, no dataset %s' % dataset
 
     class MyDataset(torch.utils.data.Dataset):
-        def __init__(self):
+        def __init__(self,percent_to_remove=0):
             self.cifar10 = torchvision.datasets.CIFAR10(root=root, train=True, download=True, transform=transform_train)
-
+            self.data = self.cifar10.data
+            self.targets = np.array(self.cifar10.targets)
+            remove_list = self.remove_least_forgotten(percent_to_remove)
+            self.final_data, self.final_targets = self.__remove__(remove_list)
             
         def __getitem__(self, index):
-            data, target = self.cifar10[index]
-                        
+            data, target = self.final_data[index], self.final_targets[index]
             return data, target, index
 
         def __len__(self):
-            return len(self.cifar10)
-    dataset = MyDataset()
+            return len(self.final_data)
 
+        def remove_least_forgotten(self, percent):
+            with open('../../cifar10_sorted_fulldata.pkl', 'rb') as f:
+                forget = pickle.load(f)
+            inds = forget["indices"]
+            removals = int(len(self.cifar10) * percent)
+            remove_list = inds[:removals]
+            return(remove_list)
+
+        def __remove__(self, remove_list):
+            mask = np.ones(len(self.cifar10), dtype=bool)
+            mask[remove_list] = 0
+            data = self.data[mask]
+            targets = self.targets[mask]
+            return data, targets
+    
+    dataset = MyDataset(percent_to_remove=0.2)
+    print(dataset.__len__())
     trainloader = torch.utils.data.DataLoader(dataset, batch_size=train_batch_size, shuffle=True,
                                               num_workers=num_workers)
     testloader = torch.utils.data.DataLoader(testset, batch_size=test_batch_size, shuffle=False,
