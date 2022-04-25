@@ -85,6 +85,7 @@ def GraSP(net, ratio, train_dataloader, device, num_classes=10, samples_per_clas
         targets_one.append(dtarget[N // 2:])
         inputs = inputs.to(device)
         targets = targets.to(device)
+        inputs = inputs.float()
 
         outputs = net.forward(inputs[:N//2])/T
         if print_once:
@@ -117,7 +118,9 @@ def GraSP(net, ratio, train_dataloader, device, num_classes=10, samples_per_clas
     for it in range(len(inputs_one)):
         print("(2): Iterations %d/%d." % (it, num_iters))
         inputs = inputs_one.pop(0).to(device)
+        inputs = inputs.float()
         targets = targets_one.pop(0).to(device)
+        
         ret_inputs.append(inputs)
         ret_targets.append(targets)
         outputs = net.forward(inputs)/T

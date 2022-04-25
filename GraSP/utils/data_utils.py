@@ -100,10 +100,10 @@ def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, ro
 
     assert trainset is not None and testset is not None, 'Error, no dataset %s' % dataset
 
-    class MyDataset(torch.utils.data.Dataset):
+    class TrainDataset(torch.utils.data.Dataset):
         def __init__(self,percent_to_remove=0):
             self.cifar10 = torchvision.datasets.CIFAR10(root=root, train=True, download=True, transform=transform_train)
-            self.data = self.cifar10.data
+            self.data = np.array(self.cifar10.data)
             self.targets = np.array(self.cifar10.targets)
             remove_list = self.remove_least_forgotten(percent_to_remove)
             self.final_data, self.final_targets = self.__remove__(remove_list)
@@ -116,7 +116,7 @@ def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, ro
             return len(self.final_data)
 
         def remove_least_forgotten(self, percent):
-            with open('./cifar10_sorted_fulldata.pkl', 'rb') as f:
+            with open('./../cifar10_sorted_fulldata.pkl', 'rb') as f:
                 forget = pickle.load(f)
             inds = forget["indices"]
             removals = int(len(self.cifar10) * percent)
@@ -128,13 +128,41 @@ def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, ro
             mask[remove_list] = 0
             data = self.data[mask]
             targets = self.targets[mask]
+            data = np.transpose(data, (0, 3, 1, 2))
             return data, targets
     
-    dataset = MyDataset(percent_to_remove=0.2)
+    traindataset = TrainDataset(percent_to_remove=0.2)
     print(dataset.__len__())
-    trainloader = torch.utils.data.DataLoader(dataset, batch_size=train_batch_size, shuffle=True,
+    trainloader = torch.utils.data.DataLoader(traindataset, batch_size=train_batch_size, shuffle=True,
                                               num_workers=num_workers)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=test_batch_size, shuffle=False,
+    
+
+    class TestDataset(torch.utils.data.Dataset):
+            def __init__(self):
+                self.cifar10 = torchvision.datasets.CIFAR10(root=root, train=True, download=True, transform=transform_train)
+                self.data = np.array(self.cifar10.data)
+                self.targets = np.array(self.cifar10.targets)
+                self.final_data, self.final_targets = self.__remove__([])
+                
+            def __getitem__(self, index):
+                data, target = self.final_data[index], self.final_targets[index]
+                return data, target, index
+
+            def __len__(self):
+                return len(self.final_data)
+
+            def __remove__(self, remove_list):
+                mask = np.ones(len(self.cifar10), dtype=bool)
+                mask[remove_list] = 0
+                data = self.data[mask]
+                targets = self.targets[mask]
+                data = np.transpose(data, (0, 3, 1, 2))
+                return data, targets
+
+    print(next(iter(trainloader))[0].shape)
+    testdataset = TestDataset(percent_to_remove=0.2)
+
+    testloader = torch.utils.data.DataLoader(testdataset, batch_size=test_batch_size, shuffle=False,
                                              num_workers=num_workers)
 
     return trainloader, testloader

@@ -116,6 +116,7 @@ def train(net, loader, optimizer, criterion, lr_scheduler, epoch, writer, iterat
     for batch_idx, (inputs, targets, indicies) in prog_bar:
 
         inputs, targets = inputs.cuda(), targets.cuda()
+        inputs = inputs.float()
         optimizer.zero_grad()
         outputs = net(inputs)
 
@@ -161,6 +162,7 @@ def test(net, loader, criterion, epoch, writer, iteration):
     with torch.no_grad():
         for batch_idx, (inputs, targets) in prog_bar:
             inputs, targets = inputs.cuda(), targets.cuda()
+            inputs = inputs.float()
             outputs = net(inputs)
             loss = criterion(outputs, targets)
 
