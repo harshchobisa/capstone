@@ -116,7 +116,7 @@ def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, ro
             return len(self.final_data)
 
         def remove_least_forgotten(self, percent):
-            with open('../../cifar10_sorted_fulldata.pkl', 'rb') as f:
+            with open('./cifar10_sorted_fulldata.pkl', 'rb') as f:
                 forget = pickle.load(f)
             inds = forget["indices"]
             removals = int(len(self.cifar10) * percent)
