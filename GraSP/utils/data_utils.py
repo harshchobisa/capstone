@@ -131,7 +131,7 @@ def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, ro
             data = np.transpose(data, (0, 3, 1, 2))
             return data, targets
     
-    traindataset = TrainDataset(percent_to_remove=0.2)
+    traindataset = TrainDataset(percent_to_remove=0)
     print(dataset.__len__())
     trainloader = torch.utils.data.DataLoader(traindataset, batch_size=train_batch_size, shuffle=True,
                                               num_workers=num_workers)
@@ -146,7 +146,7 @@ def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, ro
                 
             def __getitem__(self, index):
                 data, target = self.final_data[index], self.final_targets[index]
-                return data, target, index
+                return data, target
 
             def __len__(self):
                 return len(self.final_data)
@@ -160,7 +160,7 @@ def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, ro
                 return data, targets
 
     print(next(iter(trainloader))[0].shape)
-    testdataset = TestDataset(percent_to_remove=0.2)
+    testdataset = TestDataset()
 
     testloader = torch.utils.data.DataLoader(testdataset, batch_size=test_batch_size, shuffle=False,
                                              num_workers=num_workers)
