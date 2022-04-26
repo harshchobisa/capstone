@@ -166,3 +166,51 @@ def get_dataloader(dataset, train_batch_size, test_batch_size, num_workers=2, ro
                                              num_workers=num_workers)
 
     return trainloader, testloader
+
+
+def get_dataloader_original(dataset, train_batch_size, test_batch_size, num_workers=2, root='../data'):
+    transform_train, transform_test = get_transforms(dataset)
+    trainset, testset = None, None
+    if dataset == 'mnist':
+        trainset = torchvision.datasets.MNIST(root=root, train=True, download=True, transform=transform_train)
+        testset = torchvision.datasets.MNIST(root=root, train=False, download=True, transform=transform_test)
+
+    if dataset == 'cifar10':
+        trainset = torchvision.datasets.CIFAR10(root=root, train=True, download=True, transform=transform_train)
+        testset = torchvision.datasets.CIFAR10(root=root, train=False, download=True, transform=transform_test)
+
+    if dataset == 'cifar100':
+        trainset = torchvision.datasets.CIFAR100(root=root, train=True, download=True, transform=transform_train)
+        testset = torchvision.datasets.CIFAR100(root=root, train=False, download=True, transform=transform_test)
+
+    if dataset == 'cinic-10':
+        trainset = torchvision.datasets.ImageFolder(root + '/cinic-10/trainval', transform=transform_train)
+        testset = torchvision.datasets.ImageFolder(root + '/cinic-10/test', transform=transform_test)
+
+    if dataset == 'tiny_imagenet':
+        num_workers = 16
+        trainset = torchvision.datasets.ImageFolder(root + '/tiny_imagenet/train', transform=transform_train)
+        testset = torchvision.datasets.ImageFolder(root + '/tiny_imagenet/val', transform=transform_test)
+
+    assert trainset is not None and testset is not None, 'Error, no dataset %s' % dataset
+
+    class MyDataset(torch.utils.data.Dataset):
+        def __init__(self):
+            self.cifar10 = torchvision.datasets.CIFAR10(root=root, train=True, download=True, transform=transform_train)
+
+
+        def __getitem__(self, index):
+            data, target = self.cifar10[index]
+
+            return data, target, index
+
+        def __len__(self):
+            return len(self.cifar10)
+    dataset = MyDataset()
+
+    trainloader = torch.utils.data.DataLoader(dataset, batch_size=train_batch_size, shuffle=True,
+                                            num_workers=num_workers)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=test_batch_size, shuffle=False,
+                                            num_workers=num_workers)
+
+    return trainloader, testloader

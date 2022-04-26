@@ -13,7 +13,7 @@ from tensorboardX import SummaryWriter
 from tqdm import tqdm
 from models.base.init_utils import weights_init
 from utils.common_utils import (get_logger, makedirs, process_config, PresetLRScheduler, str_to_list)
-from utils.data_utils import get_dataloader
+from utils.data_utils import get_dataloader, get_dataloader_original
 from utils.network_utils import get_network
 from pruner.GraSP import GraSP
 
@@ -257,7 +257,7 @@ def main(config):
 
     # preprocessing
     # ====================================== get dataloader ======================================
-    trainloader, testloader = get_dataloader(config.dataset, config.batch_size, 256, 4)
+    trainloader, testloader = get_dataloader_original(config.dataset, config.batch_size, 256, 4)
     # ====================================== fetch configs ======================================
     ckpt_path = config.checkpoint_dir
     num_iterations = config.iterations
