@@ -1,2 +1,6 @@
 data
 .DS_store
+sgm_results
+craig_results
+grasp_results
+images

@@ -23,7 +23,7 @@ from GradualWarmupScheduler import *
 simplefilter(action='ignore', category=FutureWarning)
 np.seterr(all='ignore')
 
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
 
 model_names = sorted(name for name in resnet.__dict__
     if name.islower() and not name.startswith("__")
@@ -93,7 +93,7 @@ def main(subset_size=.1, greedy=0):
 
     global args, best_prec1
     args = parser.parse_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    # os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
     print(f'--------- subset_size: {subset_size}, method: {args.ig}, moment: {args.momentum}, '
           f'lr_schedule: {args.lr_schedule}, greedy: {greedy}, stoch: {args.st_grd}, rs: {args.random_subset_size} ---------------')
@@ -103,7 +103,7 @@ def main(subset_size=.1, greedy=0):
         os.makedirs(args.save_dir)
 
     model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
-    # model.cuda()
+    model.cuda()
 
     # optionally resume from a checkpoint
     if args.resume:
@@ -172,12 +172,12 @@ def main(subset_size=.1, greedy=0):
         batch_size=args.batch_size, shuffle=False,
         num_workers=args.workers, pin_memory=True)
 
-    # train_criterion = nn.CrossEntropyLoss(reduction='none').cuda()  # (Note)
-    # val_criterion = nn.CrossEntropyLoss().cuda()
+    train_criterion = nn.CrossEntropyLoss(reduction='none').cuda()  # (Note)
+    val_criterion = nn.CrossEntropyLoss().cuda()
 
 
-    train_criterion = nn.CrossEntropyLoss(reduction='none') # (Note)
-    val_criterion = nn.CrossEntropyLoss()
+    # train_criterion = nn.CrossEntropyLoss(reduction='none') # (Note)
+    # val_criterion = nn.CrossEntropyLoss()
 
     if args.half:
         model.half()
@@ -221,7 +221,7 @@ def main(subset_size=.1, greedy=0):
             print(f'Random init subset size: {args.random_subset_size}% = {B}')
 
         model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
-        # model.cuda()
+        model.cuda()
 
         best_prec1, best_loss = 0, 1e10
 
@@ -316,8 +316,8 @@ def main(subset_size=.1, greedy=0):
                         selected_ndx[run, epoch], selected_wgt[run, epoch] = subset, subset_weight
 
                     weights[subset] = subset_weight
-                    # weight = torch.from_numpy(weights).float().cuda()
-                    weight = torch.from_numpy(weights).float()
+                    weight = torch.from_numpy(weights).float().cuda()
+                    # weight = torch.from_numpy(weights).float()
 
                     # weight = torch.tensor(weights).cuda()
                     # np.random.shuffle(subset)
@@ -385,7 +385,7 @@ def main(subset_size=.1, greedy=0):
             grd += f'_warm' if args.warm_start > 0 else ''
             grd += f'_feature' if args.cluster_features else ''
             grd += f'_ca' if args.cluster_all else ''
-            folder = f'/tmp/cifar10'
+            folder = f'../gdrive/MyDrive/craig_results/larger_cifar10'
 
             if args.save_subset:
                 print(
@@ -566,14 +566,14 @@ def predictions(loader, model):
     # switch to evaluate mode
     model.eval()
 
-    # preds = torch.zeros(TRAIN_NUM, CLASS_NUM).cuda()
-    preds = torch.zeros(TRAIN_NUM, CLASS_NUM)
+    preds = torch.zeros(TRAIN_NUM, CLASS_NUM).cuda()
+    # preds = torch.zeros(TRAIN_NUM, CLASS_NUM)
     labels = torch.zeros(TRAIN_NUM, dtype=torch.int)
     end = time.time()
     with torch.no_grad():
         for i, (input, target, idx) in enumerate(loader):
-            # input_var = input.cuda()
-            input_var = input
+            input_var = input.cuda()
+            # input_var = input
 
 
             if args.half:
