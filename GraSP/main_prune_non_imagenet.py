@@ -313,12 +313,20 @@ def main(config):
             'mask': mb.masks,
             'ratio': mb.get_ratio_at_each_layer()
         }
-        path = os.path.join(ckpt_path, 'prune_%s_%s%s_r%s_it%d.pth.tar' % (config.dataset,
+        # path = os.path.join(ckpt_path, 'prune_%s_%s%s_r%s_it%d.pth.tar' % (config.dataset,
+        #                                                                    config.network,
+        #                                                                    config.depth,
+        #                                                                    config.target_ratio,
+        #                                                                    iteration))
+
+        path = os.path.join(ckpt_path, 'prune_%s_%s%s_r%s_it%d.pth' % (config.dataset,
                                                                            config.network,
                                                                            config.depth,
                                                                            config.target_ratio,
                                                                            iteration))
-        torch.save(state, path)
+        # torch.save(state, path)
+        torch.save(mb.model.state_dict(), path)
+
 
         # ========== print pruning details ============
         logger.info('**[%d] Mask and training setting: ' % iteration)
