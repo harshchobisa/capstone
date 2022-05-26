@@ -317,8 +317,6 @@ def main(subset_size=.1, greedy=0):
 
                     weights[subset] = subset_weight
                     weight = torch.from_numpy(weights).float().cuda()
-                    # weight = torch.from_numpy(weights).float()
-
                     # weight = torch.tensor(weights).cuda()
                     # np.random.shuffle(subset)
                     print(f'FL time: {ordering_time:.3f}, Sim time: {similarity_time:.3f}')
@@ -419,8 +417,8 @@ def train(train_loader, model, criterion, optimizer, epoch, weight=None):
         Run one train epoch
     """
     if weight is None:
-        weight = torch.ones(TRAIN_NUM)
-        # weight = torch.ones(TRAIN_NUM).cuda()
+        # weight = torch.ones(TRAIN_NUM)
+        weight = torch.ones(TRAIN_NUM).cuda()
 
 
     batch_time = AverageMeter()
@@ -437,10 +435,10 @@ def train(train_loader, model, criterion, optimizer, epoch, weight=None):
         # measure data loading time
         data_time.update(time.time() - end)
 
-        target = target
-        input_var = input
-        # target = target.cuda()
-        # input_var = input.cuda()
+        # target = target
+        # input_var = input
+        target = target.cuda()
+        input_var = input.cuda()
         target_var = target
         if args.half:
             input_var = input_var.half()
@@ -492,13 +490,13 @@ def validate(val_loader, model, criterion):
     end = time.time()
     with torch.no_grad():
         for i, (input, target) in enumerate(val_loader):
-            target = target
-            input_var = input
-            target_var = target
+            # target = target
+            # input_var = input
+            # target_var = target
 
-            # target = target.cuda()
-            # input_var = input.cuda()
-            # target_var = target.cuda()
+            target = target.cuda()
+            input_var = input.cuda()
+            target_var = target.cuda()
 
             if args.half:
                 input_var = input_var.half()
