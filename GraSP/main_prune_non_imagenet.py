@@ -259,7 +259,7 @@ def main(config):
     # ====================================== get dataloader ======================================
     trainloader, testloader = get_dataloader_original(config.dataset, config.batch_size, 256, 4)
     # ====================================== fetch configs ======================================
-    ckpt_path = config.checkpoint_dir
+    ckpt_path = '../../gdrive/MyDrive/pruned_with_craig/'
     num_iterations = config.iterations
     target_ratio = config.target_ratio
     normalize = config.normalize
@@ -326,6 +326,9 @@ def main(config):
                                                                            iteration))
         # torch.save(state, path)
         torch.save(mb.model.state_dict(), path)
+
+        print("DONE SAVING")
+        return
 
 
         # ========== print pruning details ============
