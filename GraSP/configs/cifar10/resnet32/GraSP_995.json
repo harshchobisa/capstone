@@ -1,7 +1,7 @@
 {
   "exp_name": "cifar10_resnet32_GraSP_prune_ratio_995",
   "network": "resnet",
-  "depth": 32,
+  "depth": 20,
   "dataset": "cifar10",
   "batch_size": 128,
   "epoch": "200",

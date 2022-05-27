@@ -106,7 +106,7 @@ class ResNet(nn.Module):
         return out
 
 
-def resnet32(depth=32, dataset='cifar10'):
+def resnet20(depth=20, dataset='cifar10'):
     assert (depth - 2) % 6 == 0, 'Depth must be = 6n + 2, got %d' % depth
     n = (depth - 2) // 6
     if dataset == 'cifar10':

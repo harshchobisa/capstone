@@ -33,7 +33,7 @@ model_names = sorted(name for name in resnet.__dict__
 print(model_names)
 
 parser = argparse.ArgumentParser(description='Propert ResNets for CIFAR10 in pytorch')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet32', #'resnet56', #
+parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet20', #'resnet56', #
                     choices=model_names,
                     help='model architecture: ' + ' | '.join(model_names) +
                          ' (default: resnet32)')
@@ -109,6 +109,9 @@ def main(subset_size=.1, greedy=0):
     for key in state_dict.keys():
       module_state_dict['module.' + str(key)] = state_dict[key]
     model.load_state_dict(module_state_dict)
+
+    print("DONE LOADING IN PRUNED MODEL")
+
 
     # optionally resume from a checkpoint
     if args.resume:
