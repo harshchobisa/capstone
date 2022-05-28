@@ -98,14 +98,9 @@ TRAIN_NUM = 50000
 CLASS_NUM = 10
 
 def init_config():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, required=True)
-    parser.add_argument('--run', type=str, default='')
-    args = parser.parse_args()
+
     runs = None
-    if len(args.run) > 0:
-        runs = args.run
-    config = process_config(args.config, runs)
+    config = process_config('configs/cifar10/resnet32/GraSP_85.json', runs)
 
     return config
 
@@ -131,17 +126,6 @@ def main(config, subset_size=.1, greedy=0):
     # Check the save_dir exists or not
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
-
-    model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
-    model.cuda()
-    state_dict = torch.load('../../gdrive/MyDrive/pruned_with_grasp/prune_cifar10_resnet32_r0.95_it0.pth')
-    module_state_dict = {}
-    for key in state_dict.keys():
-      module_state_dict['module.' + str(key)] = state_dict[key]
-    model.load_state_dict(module_state_dict)
-
-    print("DONE LOADING IN PRUNED MODEL")
-
 
     # optionally resume from a checkpoint
     if args.resume:
