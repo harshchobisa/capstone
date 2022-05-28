@@ -261,7 +261,7 @@ def main(config, subset_size=.1, greedy=0):
 
     # ====================================== start pruning ======================================
         ratio = 1 - (1 - target_ratio) ** (1.0 / num_iterations)
-
+        iteration = 0
         mb.model.apply(weights_init)
         print("=> Applying weight initialization(%s)." % config.get('init_method', 'kaiming'))
         print("Iteration of: %d/%d" % (iteration, num_iterations))
@@ -439,7 +439,7 @@ def main(config, subset_size=.1, greedy=0):
             grd += f'_warm' if args.warm_start > 0 else ''
             grd += f'_feature' if args.cluster_features else ''
             grd += f'_ca' if args.cluster_all else ''
-            folder = f'../../gdrive/MyDrive/craig_results/95_grasp_cifar10'
+            folder = f'../../gdrive/MyDrive/craig_results/85_grasp_cifar10'
 
             if args.save_subset:
                 print(
