@@ -11,7 +11,7 @@ import torch.optim
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-import resnet_icml_grasp as resnet
+import resnet_icml as resnet
 
 from torch.utils.data import Dataset, DataLoader
 import util
@@ -104,14 +104,6 @@ def main(subset_size=.1, greedy=0):
 
     model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
     model.cuda()
-    state_dict = torch.load('../../gdrive/MyDrive/pruned_with_grasp/prune_cifar10_resnet32_r0.95_it0.pth')
-    module_state_dict = {}
-    for key in state_dict.keys():
-      module_state_dict['module.' + str(key)] = state_dict[key]
-    model.load_state_dict(module_state_dict)
-
-    print("DONE LOADING IN PRUNED MODEL")
-
 
     # optionally resume from a checkpoint
     if args.resume:
@@ -183,6 +175,10 @@ def main(subset_size=.1, greedy=0):
     train_criterion = nn.CrossEntropyLoss(reduction='none').cuda()  # (Note)
     val_criterion = nn.CrossEntropyLoss().cuda()
 
+
+    # train_criterion = nn.CrossEntropyLoss(reduction='none') # (Note)
+    # val_criterion = nn.CrossEntropyLoss()
+
     if args.half:
         model.half()
         train_criterion.half()
@@ -224,45 +220,6 @@ def main(subset_size=.1, greedy=0):
             order = order[:B]
             print(f'Random init subset size: {args.random_subset_size}% = {B}')
 
-        
-                # build model
-        model = get_network(config.network, config.depth, config.dataset, use_bn=config.get('use_bn', True))
-        mask = None
-        mb = ModelBase(config.network, config.depth, config.dataset, model)
-        mb.cuda()
-        if mask is not None:
-            mb.register_mask(mask)
-
-        # preprocessing
-        # ====================================== get dataloader ======================================
-        trainloader, testloader = get_dataloader_original(config.dataset, config.batch_size, 256, 4)
-        # ====================================== fetch configs ======================================
-        ckpt_path = '../../gdrive/MyDrive/pruned_with_grasp/'
-        num_iterations = config.iterations
-        target_ratio = config.target_ratio
-        normalize = config.normalize
-        # ====================================== fetch exception ======================================
-        exception = get_exception_layers(mb.model, str_to_list(config.exception, ',', int))
-
-
-    # ====================================== start pruning ======================================
-
-        mb.model.apply(weights_init)
-        print("=> Applying weight initialization(%s)." % config.get('init_method', 'kaiming'))
-        print("Iteration of: %d/%d" % (iteration, num_iterations))
-        masks = GraSP(mb.model, ratio, trainloader, 'cuda',
-                      num_classes=classes[config.dataset],
-                      samples_per_class=config.samples_per_class,
-                      num_iters=config.get('num_iters', 1))
-        iteration = 0
-        print('=> Using GraSP')
-        # ========== register mask ==================
-        mb.register_mask(masks)
-        
-        
-        
-        
-        
         model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
         model.cuda()
 
@@ -426,7 +383,7 @@ def main(subset_size=.1, greedy=0):
             grd += f'_warm' if args.warm_start > 0 else ''
             grd += f'_feature' if args.cluster_features else ''
             grd += f'_ca' if args.cluster_all else ''
-            folder = f'../../gdrive/MyDrive/craig_results/95_grasp_cifar10'
+            folder = f'../gdrive/MyDrive/craig_results/larger_cifar10'
 
             if args.save_subset:
                 print(
@@ -460,7 +417,9 @@ def train(train_loader, model, criterion, optimizer, epoch, weight=None):
         Run one train epoch
     """
     if weight is None:
+        # weight = torch.ones(TRAIN_NUM)
         weight = torch.ones(TRAIN_NUM).cuda()
+
 
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -476,6 +435,8 @@ def train(train_loader, model, criterion, optimizer, epoch, weight=None):
         # measure data loading time
         data_time.update(time.time() - end)
 
+        # target = target
+        # input_var = input
         target = target.cuda()
         input_var = input.cuda()
         target_var = target
@@ -529,6 +490,10 @@ def validate(val_loader, model, criterion):
     end = time.time()
     with torch.no_grad():
         for i, (input, target) in enumerate(val_loader):
+            # target = target
+            # input_var = input
+            # target_var = target
+
             target = target.cuda()
             input_var = input.cuda()
             target_var = target.cuda()
@@ -600,11 +565,14 @@ def predictions(loader, model):
     model.eval()
 
     preds = torch.zeros(TRAIN_NUM, CLASS_NUM).cuda()
+    # preds = torch.zeros(TRAIN_NUM, CLASS_NUM)
     labels = torch.zeros(TRAIN_NUM, dtype=torch.int)
     end = time.time()
     with torch.no_grad():
         for i, (input, target, idx) in enumerate(loader):
             input_var = input.cuda()
+            # input_var = input
+
 
             if args.half:
                 input_var = input_var.half()
@@ -643,3 +611,4 @@ def accuracy(output, target, topk=(1,)):
 if __name__ == '__main__':
     args = parser.parse_args()
     main(subset_size=args.subset_size, greedy=args.greedy)
+

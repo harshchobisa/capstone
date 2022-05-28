@@ -259,7 +259,7 @@ def main(config):
     # ====================================== get dataloader ======================================
     trainloader, testloader = get_dataloader_original(config.dataset, config.batch_size, 256, 4)
     # ====================================== fetch configs ======================================
-    ckpt_path = '../../gdrive/MyDrive/pruned_with_craig/'
+    ckpt_path = '../../gdrive/MyDrive/pruned_with_grasp/'
     num_iterations = config.iterations
     target_ratio = config.target_ratio
     normalize = config.normalize

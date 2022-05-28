@@ -18,6 +18,15 @@ import util
 from warnings import simplefilter
 from GradualWarmupScheduler import *
 
+from models.model_base import ModelBase
+from tensorboardX import SummaryWriter
+from tqdm import tqdm
+from models.base.init_utils import weights_init
+from utils.common_utils import (get_logger, makedirs, process_config, PresetLRScheduler, str_to_list)
+from utils.data_utils import get_dataloader, get_dataloader_original
+from utils.network_utils import get_network
+from pruner.GraSP import GraSP
+
 
 # ignore all future warnings
 simplefilter(action='ignore', category=FutureWarning)
@@ -88,8 +97,29 @@ parser.add_argument('--save_subset', dest='save_subset', action='store_true', he
 TRAIN_NUM = 50000
 CLASS_NUM = 10
 
+def init_config():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, required=True)
+    parser.add_argument('--run', type=str, default='')
+    args = parser.parse_args()
+    runs = None
+    if len(args.run) > 0:
+        runs = args.run
+    config = process_config(args.config, runs)
 
-def main(subset_size=.1, greedy=0):
+    return config
+
+def get_exception_layers(net, exception):
+    exc = []
+    idx = 0
+    for m in net.modules():
+        if isinstance(m, (nn.Linear, nn.Conv2d)):
+            if idx in exception:
+                exc.append(m)
+            idx += 1
+    return tuple(exc)
+
+def main(config, subset_size=.1, greedy=0):
 
     global args, best_prec1
     args = parser.parse_args()
@@ -246,12 +276,13 @@ def main(subset_size=.1, greedy=0):
 
 
     # ====================================== start pruning ======================================
+        ratio = 1 - (1 - target_ratio) ** (1.0 / num_iterations)
 
         mb.model.apply(weights_init)
         print("=> Applying weight initialization(%s)." % config.get('init_method', 'kaiming'))
         print("Iteration of: %d/%d" % (iteration, num_iterations))
         masks = GraSP(mb.model, ratio, trainloader, 'cuda',
-                      num_classes=classes[config.dataset],
+                      num_classes=10,
                       samples_per_class=config.samples_per_class,
                       num_iters=config.get('num_iters', 1))
         iteration = 0
@@ -259,11 +290,9 @@ def main(subset_size=.1, greedy=0):
         # ========== register mask ==================
         mb.register_mask(masks)
         
-        
-        
-        
-        
-        model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
+    
+        # model = torch.nn.DataParallel(resnet.__dict__[args.arch]())
+        model = mb.model
         model.cuda()
 
         best_prec1, best_loss = 0, 1e10
@@ -642,4 +671,5 @@ def accuracy(output, target, topk=(1,)):
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    main(subset_size=args.subset_size, greedy=args.greedy)
+    config = init_config()
+    main(config, subset_size=args.subset_size, greedy=args.greedy)
