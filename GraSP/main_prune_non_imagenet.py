@@ -328,7 +328,7 @@ def main(config):
         torch.save(mb.model.state_dict(), path)
 
         print("DONE SAVING")
-        return
+        # return
 
 
         # ========== print pruning details ============
